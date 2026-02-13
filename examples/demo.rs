@@ -18,12 +18,12 @@ fn main(){
     }
 
      
-    let nowruz = ShahanshahiDate::from_gregorian(2025,3,21);
-
-    println!("\nNowruz 2025 → Shahanshahi:");
-    println!("{}", nowruz);
-
-    println!("Events: {:?}", nowruz.events());
+    let nowruz = ShahanshahiDate::from_gregorian(2025, 3, 21);
+    println!("{:?}", nowruz); // Or unwrap if you want Display
+    if let Some(date) = nowruz {
+        println!("{}", date);
+        println!("Events: {:?}", date.events());
+    }
 
     
     let from_jalali = ShahanshahiDate::from_jalali(1403,1,1);

@@ -38,12 +38,13 @@ fn main(){
         }
 
         Commands::Convert{year,month,day}=>{
-            let d=ShahanshahiDate::from_gregorian(year,month,day);
-            println!("شاهنشاهی: {}",d);
-            println!("نام ماه: {}",month_name(d.month));
-
-            for e in d.events(){
-                println!("مناسبت: {}",e);
+            let d = ShahanshahiDate::from_gregorian(year, month, day);
+            println!("شاهنشاهی: {:?}", d); // Or unwrap for Display
+            if let Some(date) = d {
+                println!("نام ماه: {}", month_name(date.month));
+                for e in date.events() {
+                    println!("رویداد: {}", e);
+                }
             }
         }
     }
