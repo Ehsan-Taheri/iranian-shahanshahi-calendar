@@ -35,7 +35,7 @@ impl ShahanshahiDate {
         })
     }
 
-     
+    /// Create a ShahanshahiDate from Jalali date components
     pub fn from_jalali(jy: i32, jm: u8, jd: u8) -> Self {
         Self {
             year: jy + SH_OFFSET,
