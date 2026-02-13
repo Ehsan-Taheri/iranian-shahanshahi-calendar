@@ -1,5 +1,5 @@
 use clap::{Parser,Subcommand};
-use shahanshahi_core::{ShahanshahiDate,month_name};
+use imperial_cal::{ShahanshahiDate, month_name};
 
 #[derive(Parser)]
 struct Cli{
