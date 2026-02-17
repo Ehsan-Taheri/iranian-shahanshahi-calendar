@@ -1,43 +1,39 @@
-use clap::{Parser,Subcommand};
+use clap::{Parser, Subcommand};
 use imperial_cal::{ShahanshahiDate, month_name};
 
 #[derive(Parser)]
-struct Cli{
+struct Cli {
     #[command(subcommand)]
-    command:Commands,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
-enum Commands{
+enum Commands {
     Today,
-    Convert{
-        year:i32,
-        month:u32,
-        day:u32
-    }
+    Convert { year: i32, month: u32, day: u32 },
 }
 
-fn main(){
-    let cli=Cli::parse();
+fn main() {
+    let cli = Cli::parse();
 
-    match cli.command{
-        Commands::Today=>{
-            let d=ShahanshahiDate::today();
-            println!("امروز: {}",d);
-            println!("نام ماه: {}",month_name(d.month));
+    match cli.command {
+        Commands::Today => {
+            let d = ShahanshahiDate::today();
+            println!("امروز: {}", d);
+            println!("نام ماه: {}", month_name(d.month));
 
-            let ev=d.events();
-            if ev.is_empty(){
+            let ev = d.events();
+            if ev.is_empty() {
                 println!("مناسبتی ندارد");
-            }else{
+            } else {
                 println!("مناسبت‌ها:");
-                for e in ev{
-                    println!("- {}",e);
+                for e in ev {
+                    println!("- {}", e);
                 }
             }
         }
 
-        Commands::Convert{year,month,day}=>{
+        Commands::Convert { year, month, day } => {
             let d = ShahanshahiDate::from_gregorian(year, month, day);
             println!("شاهنشاهی: {:?}", d); // Or unwrap for Display
             if let Some(date) = d {

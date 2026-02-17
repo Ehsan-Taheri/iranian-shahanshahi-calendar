@@ -4,26 +4,39 @@ use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "python")]
-use pyo3::prelude::*;
-#[cfg(feature = "python")]
 use pyo3::exceptions::PyValueError;
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
 
 pub mod events;
 
 pub const SH_OFFSET: i32 = 1180;
 
 pub const MONTH_NAMES: [&str; 12] = [
-    "Farvardin", "Ordibehesht", "Khordad", "Tir", "Amordad", "Shahrivar", 
-    "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"
+    "Farvardin",
+    "Ordibehesht",
+    "Khordad",
+    "Tir",
+    "Amordad",
+    "Shahrivar",
+    "Mehr",
+    "Aban",
+    "Azar",
+    "Dey",
+    "Bahman",
+    "Esfand",
 ];
 
 // In tag mige: age feature python fa'al bood, #[pyclass] ro ezafe kon
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ShahanshahiDate {
-    #[cfg_attr(feature = "python", pyo3(get))] pub year: i32,
-    #[cfg_attr(feature = "python", pyo3(get))] pub month: u8,
-    #[cfg_attr(feature = "python", pyo3(get))] pub day: u8,
+    #[cfg_attr(feature = "python", pyo3(get))]
+    pub year: i32,
+    #[cfg_attr(feature = "python", pyo3(get))]
+    pub month: u8,
+    #[cfg_attr(feature = "python", pyo3(get))]
+    pub day: u8,
 }
 
 // ==========================================
@@ -31,26 +44,46 @@ pub struct ShahanshahiDate {
 // ==========================================
 impl ShahanshahiDate {
     pub fn new(jy: i32, jm: u8, jd: u8) -> Option<Self> {
-        if jm < 1 || jm > 12 { return None; }
+        if jm < 1 || jm > 12 {
+            return None;
+        }
         let max = days_in_month(jy, jm);
-        if jd < 1 || jd > max { return None; }
-        Some(Self { year: jy + SH_OFFSET, month: jm, day: jd })
+        if jd < 1 || jd > max {
+            return None;
+        }
+        Some(Self {
+            year: jy + SH_OFFSET,
+            month: jm,
+            day: jd,
+        })
     }
 
     pub fn from_jalali(jy: i32, jm: u8, jd: u8) -> Self {
-        Self { year: jy + SH_OFFSET, month: jm, day: jd }
+        Self {
+            year: jy + SH_OFFSET,
+            month: jm,
+            day: jd,
+        }
     }
 
     pub fn from_gregorian(gy: i32, gm: u32, gd: u32) -> Option<Self> {
         NaiveDate::from_ymd_opt(gy, gm, gd)?;
         let (jy, jm, jd) = gregorian_to_jalali(gy, gm as i32, gd as i32);
-        Some(Self { year: jy + SH_OFFSET, month: jm as u8, day: jd as u8 })
+        Some(Self {
+            year: jy + SH_OFFSET,
+            month: jm as u8,
+            day: jd as u8,
+        })
     }
 
     pub fn today() -> Self {
         let t = chrono::Local::now().date_naive();
         let (jy, jm, jd) = gregorian_to_jalali(t.year(), t.month() as i32, t.day() as i32);
-        Self { year: jy + SH_OFFSET, month: jm as u8, day: jd as u8 }
+        Self {
+            year: jy + SH_OFFSET,
+            month: jm as u8,
+            day: jd as u8,
+        }
     }
 
     pub fn events(&self) -> Vec<String> {
@@ -63,7 +96,7 @@ impl ShahanshahiDate {
 }
 
 // ==========================================
-// 2. API Makhsoos-e Python (Faghat moghe sakhtan-e whl fa'al mishe)
+// 2. Python API
 // ==========================================
 #[cfg(feature = "python")]
 #[pymethods]
@@ -82,7 +115,8 @@ impl ShahanshahiDate {
     #[staticmethod]
     #[pyo3(name = "from_gregorian")]
     fn py_from_gregorian(gy: i32, gm: u32, gd: u32) -> PyResult<Self> {
-        Self::from_gregorian(gy, gm, gd).ok_or_else(|| PyValueError::new_err("Invalid Gregorian date"))
+        Self::from_gregorian(gy, gm, gd)
+            .ok_or_else(|| PyValueError::new_err("Invalid Gregorian date"))
     }
 
     #[staticmethod]
@@ -110,8 +144,6 @@ impl ShahanshahiDate {
     }
 }
 
-
-
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn month_name(m: u8) -> String {
     if (1..=12).contains(&m) {
@@ -126,7 +158,9 @@ pub fn month_name(m: u8) -> String {
 // ==========================================
 pub fn is_jalali_leap(jy: i32) -> bool {
     let mut a = jy - 474;
-    if a < 0 { a -= 1; }
+    if a < 0 {
+        a -= 1;
+    }
     let b = 474 + (a % 2820);
     ((b + 38) * 682) % 2816 < 682
 }
@@ -135,7 +169,13 @@ pub fn days_in_month(y: i32, m: u8) -> u8 {
     match m {
         1..=6 => 31,
         7..=11 => 30,
-        12 => if is_jalali_leap(y) { 30 } else { 29 },
+        12 => {
+            if is_jalali_leap(y) {
+                30
+            } else {
+                29
+            }
+        }
         _ => 0,
     }
 }
@@ -149,7 +189,9 @@ fn gregorian_to_jalali(gy: i32, gm: i32, gd: i32) -> (i32, i32, i32) {
     let gd_adj = gd - 1;
 
     let mut gdn = 365 * gy_adj + (gy_adj + 3) / 4 - (gy_adj + 99) / 100 + (gy_adj + 399) / 400;
-    for i in 0..gm_adj { gdn += gdm[i as usize]; }
+    for i in 0..gm_adj {
+        gdn += gdm[i as usize];
+    }
 
     if gm_adj > 1 && ((gy % 4 == 0 && gy % 100 != 0) || (gy % 400 == 0)) {
         gdn += 1;
@@ -178,7 +220,10 @@ fn gregorian_to_jalali(gy: i32, gm: i32, gd: i32) -> (i32, i32, i32) {
         }
         jdn -= jdm[i];
     }
-    if jm == 0 { jm = 12; jd = jdn + 1; }
+    if jm == 0 {
+        jm = 12;
+        jd = jdn + 1;
+    }
 
     (jy, jm as i32, jd as i32)
 }

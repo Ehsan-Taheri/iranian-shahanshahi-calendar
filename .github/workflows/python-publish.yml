@@ -1,13 +1,13 @@
 name: Publish to PyPI (Python)
 
-# Hamon trigger-i ke baraye crates.io gozashti
+ 
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
-  # 1. Build kardan-e Wheel-ha baraye system-amel haye mokhtalef
+ 
   build-wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -21,12 +21,12 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Maturin inja khodesh Python ro peyda mikone va build mikone
+       
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           command: build
-          args: --release --out dist
+          args: --release --out dist --features python
 
       # Wheel-haye sakhte shode ro tooye GitHub zakhire mikone
       - name: Upload wheels
@@ -46,7 +46,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist
+          args: --out dist --features python
           
       - name: Upload sdist
         uses: actions/upload-artifact@v4
