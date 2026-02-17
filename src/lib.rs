@@ -3,8 +3,6 @@
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 
-
-
 #[cfg(feature = "python")]
 use pyo3::exceptions::PyValueError;
 #[cfg(feature = "python")]
