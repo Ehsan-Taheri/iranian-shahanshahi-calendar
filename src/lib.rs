@@ -13,21 +13,20 @@ pub mod events;
 pub const SH_OFFSET: i32 = 1180;
 
 pub const MONTH_NAMES: [&str; 12] = [
-    "Farvardin",
-    "Ordibehesht",
-    "Khordad",
-    "Tir",
-    "Amordad",
-    "Shahrivar",
-    "Mehr",
-    "Aban",
-    "Azar",
-    "Dey",
-    "Bahman",
-    "Esfand",
+    "فروردین",
+    "اردیبهشت",
+    "خرداد",
+    "تیر",
+    "امرداد",
+    "شهریور",
+    "مهر",
+    "آبان",
+    "آذر",
+    "دی",
+    "بهمن",
+    "اسفند",
 ];
 
-// In tag mige: age feature python fa'al bood, #[pyclass] ro ezafe kon
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ShahanshahiDate {
@@ -39,9 +38,6 @@ pub struct ShahanshahiDate {
     pub day: u8,
 }
 
-// ==========================================
-// 1. API Asli-e Rust (Hamishe Compile Mishe baraye CLI va Rust)
-// ==========================================
 impl ShahanshahiDate {
     pub fn new(jy: i32, jm: u8, jd: u8) -> Option<Self> {
         if !(1..=12).contains(&jm) {
@@ -57,6 +53,15 @@ impl ShahanshahiDate {
             month: jm,
             day: jd,
         })
+    }
+    pub fn today() -> Self {
+        let t = chrono::Local::now().date_naive();
+        let (jy, jm, jd) = gregorian_to_jalali(t.year(), t.month() as i32, t.day() as i32);
+        Self {
+            year: jy + SH_OFFSET,
+            month: jm as u8,
+            day: jd as u8,
+        }
     }
 
     pub fn from_jalali(jy: i32, jm: u8, jd: u8) -> Self {
@@ -77,16 +82,14 @@ impl ShahanshahiDate {
         })
     }
 
-    pub fn today() -> Self {
-        let t = chrono::Local::now().date_naive();
-        let (jy, jm, jd) = gregorian_to_jalali(t.year(), t.month() as i32, t.day() as i32);
-        Self {
-            year: jy + SH_OFFSET,
-            month: jm as u8,
-            day: jd as u8,
-        }
+    pub fn to_gregorian(&self) -> Option<(i32, u32, u32)> {
+        let (gy, gm, gd) =
+            jalali_to_gregorian(self.year - SH_OFFSET, self.month as i32, self.day as i32);
+        Some((gy, gm as u32, gd as u32))
     }
-
+    pub fn to_jalali(&self) -> (i32, u8, u8) {
+        (self.year - SH_OFFSET, self.month, self.day)
+    }
     pub fn events(&self) -> Vec<String> {
         events::events_on(self.month, self.day)
     }
@@ -94,11 +97,35 @@ impl ShahanshahiDate {
     pub fn get_month_name(&self) -> String {
         MONTH_NAMES[(self.month - 1) as usize].to_string()
     }
+    pub fn day_of_week(&self) -> String {
+        let (gy, gm, gd) =
+            jalali_to_gregorian(self.year - SH_OFFSET, self.month as i32, self.day as i32);
+        if let Some(nd) = NaiveDate::from_ymd_opt(gy, gm as u32, gd as u32) {
+            match nd.weekday() {
+                chrono::Weekday::Sat => "شنبه",
+                chrono::Weekday::Sun => "یکشنبه",
+                chrono::Weekday::Mon => "دوشنبه",
+                chrono::Weekday::Tue => "سه‌شنبه",
+                chrono::Weekday::Wed => "چهارشنبه",
+                chrono::Weekday::Thu => "پنجشنبه",
+                chrono::Weekday::Fri => "آدینه",
+            }
+            .to_string()
+        } else {
+            "".to_string()
+        }
+    }
+
+    pub fn add_days(&self, days: i32) -> Option<Self> {
+        let (gy, gm, gd) =
+            jalali_to_gregorian(self.year - SH_OFFSET, self.month as i32, self.day as i32);
+        let nd = NaiveDate::from_ymd_opt(gy, gm as u32, gd as u32)?;
+        let new_nd =
+            nd.checked_add_signed(chrono::Duration::try_days(days as i64).unwrap_or_default())?;
+        Self::from_gregorian(new_nd.year(), new_nd.month(), new_nd.day())
+    }
 }
 
-// ==========================================
-// 2. Python API
-// ==========================================
 #[cfg(feature = "python")]
 #[pymethods]
 impl ShahanshahiDate {
@@ -136,6 +163,23 @@ impl ShahanshahiDate {
         self.get_month_name()
     }
 
+    #[pyo3(name = "to_gregorian")]
+    fn py_to_gregorian(&self) -> PyResult<(i32, u32, u32)> {
+        self.to_gregorian()
+            .ok_or_else(|| PyValueError::new_err("Conversion failed"))
+    }
+
+    #[pyo3(name = "day_of_week")]
+    fn py_day_of_week(&self) -> String {
+        self.day_of_week()
+    }
+
+    #[pyo3(name = "add_days")]
+    fn py_add_days(&self, days: i32) -> PyResult<Self> {
+        self.add_days(days)
+            .ok_or_else(|| PyValueError::new_err("Invalid date calculation"))
+    }
+
     fn __str__(&self) -> String {
         format!("{:04}/{:02}/{:02}", self.year, self.month, self.day)
     }
@@ -154,9 +198,6 @@ pub fn month_name(m: u8) -> String {
     }
 }
 
-// ==========================================
-// Tabe'-haye Komaki
-// ==========================================
 pub fn is_jalali_leap(jy: i32) -> bool {
     let mut a = jy - 474;
     if a < 0 {
@@ -227,6 +268,62 @@ fn gregorian_to_jalali(gy: i32, gm: i32, gd: i32) -> (i32, i32, i32) {
     }
 
     (jy, jm as i32, jd)
+}
+
+fn jalali_to_gregorian(jy: i32, jm: i32, jd: i32) -> (i32, i32, i32) {
+    let mut gy = if jy <= 979 { 621 } else { 1600 };
+    let jy2 = jy - if jy <= 979 { 0 } else { 979 };
+
+    let mut days = 365 * jy2 + (jy2 / 33) * 8 + (jy2 % 33 + 3) / 4;
+    for i in 0..(jm - 1) {
+        days += if i < 6 { 31 } else { 30 };
+    }
+    days += jd - 1;
+
+    let mut gy2 = 400 * (days / 146097);
+    days %= 146097;
+    if days > 36524 {
+        days -= 1;
+        gy2 += 100 * (days / 36524);
+        days %= 36524;
+        if days >= 365 {
+            days += 1;
+        }
+    }
+    gy2 += 4 * (days / 1461);
+    days %= 1461;
+    if days > 365 {
+        gy2 += (days - 1) / 365;
+        days = (days - 1) % 365;
+    }
+    gy += gy2;
+
+    let leap = (gy % 4 == 0 && gy % 100 != 0) || (gy % 400 == 0);
+    let gdm = [
+        31,
+        if leap { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
+    let mut gm = 0;
+    let mut gd = days + 1;
+    for (i, &m_days) in gdm.iter().enumerate() {
+        if gd <= m_days {
+            gm = i as i32 + 1;
+            break;
+        }
+        gd -= m_days;
+    }
+
+    (gy, gm, gd)
 }
 
 impl std::fmt::Display for ShahanshahiDate {
