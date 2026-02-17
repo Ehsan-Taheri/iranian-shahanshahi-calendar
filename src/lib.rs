@@ -44,9 +44,8 @@ pub struct ShahanshahiDate {
 // ==========================================
 impl ShahanshahiDate {
     pub fn new(jy: i32, jm: u8, jd: u8) -> Option<Self> {
-        if jm < 1 || jm > 12 {
-            return None;
-        }
+        if !(1..=12).contains(&jm) { return None; }
+
         let max = days_in_month(jy, jm);
         if jd < 1 || jd > max {
             return None;
@@ -212,20 +211,20 @@ fn gregorian_to_jalali(gy: i32, gm: i32, gd: i32) -> (i32, i32, i32) {
 
     let mut jm = 0;
     let mut jd = 0;
-    for i in 0..11 {
-        if jdn < jdm[i] {
-            jm = i + 1;
-            jd = jdn + 1;
-            break;
-        }
-        jdn -= jdm[i];
+    for (i, &days) in jdm.iter().enumerate().take(11) {
+    if jdn < days {
+        jm = i + 1;
+        jd = jdn + 1;
+        break;
     }
+    jdn -= days;
+}
     if jm == 0 {
         jm = 12;
         jd = jdn + 1;
     }
 
-    (jy, jm as i32, jd as i32)
+    (jy, jm as i32, jd)
 }
 
 impl std::fmt::Display for ShahanshahiDate {
