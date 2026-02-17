@@ -44,7 +44,9 @@ pub struct ShahanshahiDate {
 // ==========================================
 impl ShahanshahiDate {
     pub fn new(jy: i32, jm: u8, jd: u8) -> Option<Self> {
-        if !(1..=12).contains(&jm) { return None; }
+        if !(1..=12).contains(&jm) {
+            return None;
+        }
 
         let max = days_in_month(jy, jm);
         if jd < 1 || jd > max {
@@ -212,13 +214,13 @@ fn gregorian_to_jalali(gy: i32, gm: i32, gd: i32) -> (i32, i32, i32) {
     let mut jm = 0;
     let mut jd = 0;
     for (i, &days) in jdm.iter().enumerate().take(11) {
-    if jdn < days {
-        jm = i + 1;
-        jd = jdn + 1;
-        break;
+        if jdn < days {
+            jm = i + 1;
+            jd = jdn + 1;
+            break;
+        }
+        jdn -= days;
     }
-    jdn -= days;
-}
     if jm == 0 {
         jm = 12;
         jd = jdn + 1;
