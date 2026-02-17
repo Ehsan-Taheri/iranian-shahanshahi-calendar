@@ -9,16 +9,21 @@ readme = "README.md"
 repository = "https://github.com/Ehsan-Taheri/iranian-shahanshahi-calendar"
 
 [lib]
+name = "imperial_cal"
 crate-type = ["cdylib", "rlib"] 
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
- 
-wasm-bindgen = { version = "0.2", optional = true }
 clap = { version = "4", features = ["derive"] }
+
+# Inja pyo3 ro Ekhtiari kardim!
+pyo3 = { version = "0.21", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
 
 [features]
 default = []
-wasm = ["wasm-bindgen"] 
+wasm = ["wasm-bindgen"]
+# Feature-e python, pyo3 ro ba extension-module fa'al mikone
+python = ["pyo3/extension-module"]

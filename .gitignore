@@ -1,2 +1,15 @@
-/target
-Cargo.lock
+# Rust
+target/
+
+# Python / Maturin
+dist/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.whl
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,8 +1,12 @@
+#![allow(unsafe_op_in_unsafe_fn)]
+
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
+#[cfg(feature = "python")]
+use pyo3::exceptions::PyValueError;
 
 pub mod events;
 
@@ -13,73 +17,113 @@ pub const MONTH_NAMES: [&str; 12] = [
     "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"
 ];
 
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+// In tag mige: age feature python fa'al bood, #[pyclass] ro ezafe kon
+#[cfg_attr(feature = "python", pyclass)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ShahanshahiDate {
-    pub year: i32,
-    pub month: u8,
-    pub day: u8,
+    #[cfg_attr(feature = "python", pyo3(get))] pub year: i32,
+    #[cfg_attr(feature = "python", pyo3(get))] pub month: u8,
+    #[cfg_attr(feature = "python", pyo3(get))] pub day: u8,
 }
 
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
+// ==========================================
+// 1. API Asli-e Rust (Hamishe Compile Mishe baraye CLI va Rust)
+// ==========================================
 impl ShahanshahiDate {
-    
     pub fn new(jy: i32, jm: u8, jd: u8) -> Option<Self> {
         if jm < 1 || jm > 12 { return None; }
         let max = days_in_month(jy, jm);
         if jd < 1 || jd > max { return None; }
-        Some(Self {
-            year: jy + SH_OFFSET,
-            month: jm,
-            day: jd,
-        })
+        Some(Self { year: jy + SH_OFFSET, month: jm, day: jd })
     }
 
-    /// Create a ShahanshahiDate from Jalali date components
     pub fn from_jalali(jy: i32, jm: u8, jd: u8) -> Self {
-        Self {
-            year: jy + SH_OFFSET,
-            month: jm,
-            day: jd,
-        }
+        Self { year: jy + SH_OFFSET, month: jm, day: jd }
     }
 
-     
     pub fn from_gregorian(gy: i32, gm: u32, gd: u32) -> Option<Self> {
-     
         NaiveDate::from_ymd_opt(gy, gm, gd)?;
         let (jy, jm, jd) = gregorian_to_jalali(gy, gm as i32, gd as i32);
-        Some(Self {
-            year: jy + SH_OFFSET,
-            month: jm as u8,
-            day: jd as u8,
-        })
+        Some(Self { year: jy + SH_OFFSET, month: jm as u8, day: jd as u8 })
     }
 
-    
     pub fn today() -> Self {
         let t = chrono::Local::now().date_naive();
-    
-        Self::from_gregorian(t.year(), t.month(), t.day()).unwrap()
+        let (jy, jm, jd) = gregorian_to_jalali(t.year(), t.month() as i32, t.day() as i32);
+        Self { year: jy + SH_OFFSET, month: jm as u8, day: jd as u8 }
     }
 
-     
     pub fn events(&self) -> Vec<String> {
         events::events_on(self.month, self.day)
     }
 
-     
     pub fn get_month_name(&self) -> String {
         MONTH_NAMES[(self.month - 1) as usize].to_string()
     }
 }
 
- 
+// ==========================================
+// 2. API Makhsoos-e Python (Faghat moghe sakhtan-e whl fa'al mishe)
+// ==========================================
+#[cfg(feature = "python")]
+#[pymethods]
+impl ShahanshahiDate {
+    #[new]
+    fn py_new(jy: i32, jm: u8, jd: u8) -> PyResult<Self> {
+        Self::new(jy, jm, jd).ok_or_else(|| PyValueError::new_err("Invalid date"))
+    }
 
-pub fn month_name(m: u8) -> &'static str {
-    MONTH_NAMES[(m - 1) as usize]
+    #[staticmethod]
+    #[pyo3(name = "from_jalali")]
+    fn py_from_jalali(jy: i32, jm: u8, jd: u8) -> Self {
+        Self::from_jalali(jy, jm, jd)
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "from_gregorian")]
+    fn py_from_gregorian(gy: i32, gm: u32, gd: u32) -> PyResult<Self> {
+        Self::from_gregorian(gy, gm, gd).ok_or_else(|| PyValueError::new_err("Invalid Gregorian date"))
+    }
+
+    #[staticmethod]
+    #[pyo3(name = "today")]
+    fn py_today() -> Self {
+        Self::today()
+    }
+
+    #[pyo3(name = "events")]
+    fn py_events(&self) -> Vec<String> {
+        self.events()
+    }
+
+    #[pyo3(name = "get_month_name")]
+    fn py_get_month_name(&self) -> String {
+        self.get_month_name()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{:04}/{:02}/{:02}", self.year, self.month, self.day)
+    }
+
+    fn __repr__(&self) -> String {
+        self.__str__()
+    }
 }
 
+
+
+#[cfg_attr(feature = "python", pyfunction)]
+pub fn month_name(m: u8) -> String {
+    if (1..=12).contains(&m) {
+        MONTH_NAMES[(m - 1) as usize].to_string()
+    } else {
+        "".to_string()
+    }
+}
+
+// ==========================================
+// Tabe'-haye Komaki
+// ==========================================
 pub fn is_jalali_leap(jy: i32) -> bool {
     let mut a = jy - 474;
     if a < 0 { a -= 1; }
@@ -145,7 +189,13 @@ impl std::fmt::Display for ShahanshahiDate {
     }
 }
 
- 
+#[cfg(feature = "python")]
+#[pymodule]
+fn imperial_cal(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<ShahanshahiDate>()?;
+    m.add_function(wrap_pyfunction!(month_name, m)?)?;
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {
@@ -161,7 +211,6 @@ mod tests {
 
     #[test]
     fn test_invalid_date() {
-        
         assert!(ShahanshahiDate::new(1400, 12, 30).is_none());
     }
 }
