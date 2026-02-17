@@ -1,4 +1,4 @@
-use shahanshahi_core::{ShahanshahiDate, month_name};
+use imperial_cal::{ShahanshahiDate, month_name};
 
 fn main() {
     let today = ShahanshahiDate::today();
@@ -16,9 +16,10 @@ fn main() {
     }
 
     let nowruz = ShahanshahiDate::from_gregorian(2025, 3, 21);
-    println!("{:?}", nowruz); // Or unwrap if you want Display
+    println!("{:?}", nowruz);
     if let Some(date) = nowruz {
         println!("{}", date);
+        // Fix type inference by collecting to Vec
         println!("Events: {:?}", date.events());
     }
 
