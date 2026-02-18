@@ -1,13 +1,10 @@
 use imperial_cal::{ShahanshahiDate, month_name};
 
 fn main() {
-    
     println!("=== 📅 Taghvim-e Shahanshahi (Demo) ===\n");
 
-    // 1. Tarikh-e Emrooz va Etela'at-e Kamel
     let today = ShahanshahiDate::today();
     println!("📆 Tarikh-e Emrooz (Shahanshahi): {}", today);
-    println!("   Rooz-e Hafte: {}", today.day_of_week()); // باید بنویسد چهارشنبه
     println!("   Esm-e Mah: {}", month_name(today.month));
     println!("   Rooz-e Hafte: {}", today.day_of_week());
 
@@ -19,7 +16,6 @@ fn main() {
     }
     println!("--------------------------------------------------");
 
-    // 2. Tabdil az Miladi be Shahanshahi
     let gy = 2026;
     let gm = 3;
     let gd = 21;
