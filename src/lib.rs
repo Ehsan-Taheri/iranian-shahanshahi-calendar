@@ -334,7 +334,7 @@ fn jalali_to_gregorian(jy: i32, jm: i32, jd: i32) -> (i32, i32, i32) {
         gd -= v;
     }
 
-    (gy, gm as i32, gd )
+    (gy, gm as i32, gd)
 }
 
 impl std::fmt::Display for ShahanshahiDate {
