@@ -97,22 +97,23 @@ impl ShahanshahiDate {
     pub fn get_month_name(&self) -> String {
         MONTH_NAMES[(self.month - 1) as usize].to_string()
     }
+
     pub fn day_of_week(&self) -> String {
-        let (gy, gm, gd) =
-            jalali_to_gregorian(self.year - SH_OFFSET, self.month as i32, self.day as i32);
+         
+        let (gy, gm, gd) = jalali_to_gregorian(self.year - SH_OFFSET, self.month as i32, self.day as i32);
+        
         if let Some(nd) = NaiveDate::from_ymd_opt(gy, gm as u32, gd as u32) {
             match nd.weekday() {
                 chrono::Weekday::Sat => "شنبه",
-                chrono::Weekday::Sun => "یکشنبه",
+                chrono::Weekday::Sun => "یک‌شنبه",
                 chrono::Weekday::Mon => "دوشنبه",
                 chrono::Weekday::Tue => "سه‌شنبه",
                 chrono::Weekday::Wed => "چهارشنبه",
-                chrono::Weekday::Thu => "پنجشنبه",
+                chrono::Weekday::Thu => "پنج‌شنبه",
                 chrono::Weekday::Fri => "آدینه",
-            }
-            .to_string()
+            }.to_string()
         } else {
-            "".to_string()
+            "نامشخص".to_string()
         }
     }
 
